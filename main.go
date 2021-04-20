@@ -1,12 +1,22 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/token"
 )
 
 func main() {
-	expr, _ := parser.ParseExpr("A + 1")
+	fset := token.NewFileSet()
+	f, _ := parser.ParseFile(fset, "./example/example.go", nil, parser.Mode(0))
 
-	ast.Print(nil, expr)
+	ast.Inspect(f, func(n ast.Node) bool {
+		if v, ok := n.(*ast.FuncDecl); ok {
+			fmt.Println(v.Name)
+			fmt.Println(fset.Position(v.Pos()))
+		}
+
+		return true
+	})
 }
