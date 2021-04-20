@@ -1,35 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
-	"go/printer"
 	"go/token"
-	"log"
-	"os"
 )
 
 func main() {
 	fset := token.NewFileSet()
 	f, _ := parser.ParseFile(fset, "./example/example.go", nil, parser.Mode(0))
 
-	ast.Inspect(f, func(n ast.Node) bool {
-		if v, ok := n.(*ast.FuncDecl); ok {
-			// ノードを書き換える
-			v.Name = &ast.Ident{
-				Name: "plus",
-			}
+	for _, decl := range f.Decls {
+		// struct型の型定義を表示する
+
+		// GenDeclであるかを判定
+		d, ok := decl.(*ast.GenDecl)
+		if !ok || d.Tok != token.TYPE {
+			continue
 		}
 
-		return true
-	})
+		for _, spec := range d.Specs {
+			// TypeSpec型か確認
+			s, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
 
-	file, err := os.OpenFile("example/result.go", os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatal(err)
+			// StructType型か確認
+			t, ok := s.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+			fmt.Println(s.Name)
+			ast.Print(fset, t)
+		}
 	}
-	defer file.Close()
-
-	pp := &printer.Config{Tabwidth: 8, Mode: printer.UseSpaces | printer.TabIndent}
-	pp.Fprint(file, fset, f)
 }
